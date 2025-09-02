@@ -1,7 +1,3 @@
-# Спецификация
-
-# Спецификация
-
 ## Docker
 
 PG запускается с базой данных Chinook [Chinook Database](https://github.com/lerocha/chinook-database).
@@ -15,7 +11,7 @@ docker-compose up -d # запуск контейнеров SuperSet + PG
 ## auto_super
 
 ```bash
-pyshon ./delete_superset.py # удалить все метаданные в сеперсете
+pyshon ./delete_superset.py # удалить все метаданные
 ```
 
 ```bash
