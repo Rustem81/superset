@@ -7,3 +7,4 @@ auto_super/index.py
 auto_super/get_all_viz_types.py
 auto_super/export_save.py
 dtaft.md
+docker/superset_data/superset.db
