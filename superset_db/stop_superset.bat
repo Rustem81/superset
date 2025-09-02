@@ -1,14 +1,27 @@
 @echo off
-echo 🛑 Останавливаем Superset для бэкапа...
+:: ========================
+:: Бэкап метабазы Superset (SQLite)
+:: ========================
 
-:: Останавливаем контейнеры
+echo Останавливаем контейнеры...
 docker-compose down
+if %errorlevel% neq 0 (
+    echo Предупреждение: не удалось остановить контейнеры
+)
 
-:: Создаём папку backups
 if not exist backups mkdir backups
 
-:: Копируем superset.db
-docker cp superset-app:/app/superset_home/superset.db backups\superset_%date:~-4%%date:~4,2%%date:~7,2%_%time:~0,2%%time:~3,2%%time:~6,2%.db
+echo Бэкап superset.db...
+docker cp superset-app:/app/superset_home/superset.db backups\superset_%date:~-4%%date:~4,2%%date:~7,2%_%time:~0,2%%time:~3,2%.db
 
-echo ✅ Бэкап сохранён в папке backups\
+if %errorlevel% neq 0 (
+    echo ОШИБКА: Не удалось скопировать базу данных
+    pause
+    exit /b 1
+)
+
+echo Бэкап успешно завершен!
+echo Файл: backups\superset_%date:~-4%%date:~4,2%%date:~7,2%_%time:~0,2%%time:~3,2%.db
+
+dir backups\
 pause

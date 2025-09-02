@@ -1,2 +1,9 @@
 venv
 chinook-database
+superset_project_plan.md
+build_css
+auto_super/export
+auto_super/index.py
+auto_super/get_all_viz_types.py
+auto_super/export_save.py
+dtaft.md

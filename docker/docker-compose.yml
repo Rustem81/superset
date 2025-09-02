@@ -7,13 +7,15 @@ services:
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
-      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: chinook_serial
+      POSTGRES_HOST_AUTH_METHOD: trust # 🔓 Никаких паролей, только доверие
       LANG: en_US.utf8
       LC_ALL: en_US.utf8
-      POSTGRES_INITDB_ARGS: '--encoding=UTF8 --lc-collate=C --lc-ctype=C'
     volumes:
       - pg_data_chinook2:/var/lib/postgresql/data
       - ./Chinook_PostgreSql_SerialPKs.sql:/docker-entrypoint-initdb.d/init.sql
+      # 🔥 Делаем данные доступными для записи с хоста
+      - ./init_data_done:/init_data_done # Флаг, что инициализация прошла
     ports:
       - '25432:5432'
     networks:
@@ -40,12 +42,15 @@ services:
       WTF_CSRF_ENABLED: 'False'
       FLASK_APP: superset.app:create_app
       PIP_ROOT_USER_ACTION: ignore
-      # Указываем путь к кастомному конфигу
       SUPERSET_CONFIG_PATH: /app/superset_config.py
+      # 🔥 Отключаем кэширование, включаем debug (опционально)
+      FLASK_ENV: development
     volumes:
-      # 🔥 Монтируем:
-      - ./superset_data:/app/superset_home # Данные (superset.db)
-      - ./superset_config.py:/app/superset_config.py # Конфигурация
+      # 🔥 Монтируем с полным доступом
+      - ./superset_data:/app/superset_home:rw # superset.db, кэш, логи
+      - ./superset_config.py:/app/superset_config.py:ro
+      # 🔥 Гарантируем права на запись
+      - ./chmod-fix.sh:/chmod-fix.sh
     networks:
       - superset_net
     healthcheck:
@@ -55,9 +60,13 @@ services:
       retries: 30
     command: >
       bash -c "
+        # Запускаем fix-прав после старта
+        chmod -R 777 /app/superset_home || true &&
         superset db upgrade &&
         superset fab create-admin --username admin --firstname Admin --lastname User --email admin@superset.com --password admin &&
         superset init &&
+        # Ещё раз на всякий
+        chmod -R 777 /app/superset_home || true &&
         superset run -h 0.0.0.0 -p 8088"
 
 networks:
@@ -67,4 +76,3 @@ networks:
 volumes:
   pg_data_chinook2:
     driver: local
-  # superset_data создаётся автоматически как папка на хосте (bind mount)

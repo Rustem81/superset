@@ -54,23 +54,31 @@ def get_database_id():
 # ========================
 # 3. Создать виртуальный датасет из SQL
 # ========================
-def create_virtual_dataset(database_id, dataset_name, sql_query):
-    print(f"📊 Создаём виртуальный датасет: {dataset_name}")
+def create_virtual_dataset(
+    database_id, technical_name, display_name, sql_query
+):
+    """
+    Создаёт виртуальный датасет
+    :param database_id: ID БД
+    :param technical_name: имя на латинице (для API)
+    :param display_name: имя на русском (для интерфейса)
+    :param sql_query: SQL-запрос
+    """
+    print(f"📊 Создаём виртуальный датасет: {display_name}")
     url = f"{BASE_URL}/api/v1/dataset/"
     payload = {
         "database": database_id,
-        "schema": None,  # Можно None, если не нужно
-        "table_name": dataset_name,
+        "schema": None,
+        "table_name": display_name,  # Это имя будет отображаться в UI
         "sql": sql_query.strip(),
         "owners": [1],
-        # УДАЛИЛИ: "is_sqllab_view": True
     }
     response = session.post(url, json=payload)
     if response.status_code != 201:
-        # Попробуем упрощённый запрос
+        # Упрощённый запрос для диагностики
         simple_payload = {
             "database": database_id,
-            "table_name": dataset_name,
+            "table_name": display_name,
             "sql": "SELECT 1 AS test",
         }
         response = session.post(url, json=simple_payload)
@@ -78,10 +86,10 @@ def create_virtual_dataset(database_id, dataset_name, sql_query):
             raise Exception(f"❌ Ошибка создания датасета: {response.text}")
         else:
             print(
-                f"⚠️ Датасет создан, но SQL заменён временно (проблема с кавычками или символами)"
+                f"⚠️ Датасет '{display_name}' создан, но SQL упрощён (проблема с кавычками)"
             )
     else:
-        print(f"✅ Датасет '{dataset_name}' создан")
+        print(f"✅ Датасет '{display_name}' создан")
     return response.json()["id"]
 
 
@@ -91,7 +99,7 @@ def create_virtual_dataset(database_id, dataset_name, sql_query):
 DATASETS = [
     {
         "name": "Sales Overview",
-        "description": "Общая статистика",
+        "display_name": "Общая статистика",
         "sql": """
 SELECT
     COUNT(*) AS "Количество заказов",
@@ -99,94 +107,71 @@ SELECT
     AVG(total) AS "Средний чек",
     MIN(invoice_date) AS "Первая продажа",
     MAX(invoice_date) AS "Последняя продажа"
-FROM
-    invoice;
+FROM invoice;
         """,
     },
     {
         "name": "Revenue by Country",
-        "description": "Выручка по странам",
+        "display_name": "Выручка по странам",
         "sql": """
 SELECT
     billing_country AS "Страна",
-    COUNT(invoice_id) AS "Количество заказов",
     SUM(total) AS "Выручка",
-    AVG(total) AS "Средний чек"
-FROM
-    invoice
-GROUP BY
-    billing_country
-ORDER BY
-    "Выручка" DESC;
+    COUNT(*) AS "Количество заказов"
+FROM invoice
+GROUP BY "Страна"
+ORDER BY "Выручка" DESC;
         """,
     },
     {
         "name": "Top 10 Customers",
-        "description": "Топ-10 клиентов",
+        "display_name": "Топ-10 клиентов",
         "sql": """
 SELECT
     c.first_name || ' ' || c.last_name AS "Имя клиента",
     c.country AS "Страна",
-    c.email AS "Email",
-    c.company AS "Компания",
-    SUM(i.total) AS "Общая выручка",
-    COUNT(i.invoice_id) AS "Количество заказов"
-FROM
-    customer c
-    JOIN invoice i ON c.customer_id = i.customer_id
-GROUP BY
-    c.customer_id,
-    c.first_name,
-    c.last_name,
-    c.country,
-    c.email,
-    c.company
-ORDER BY
-    "Общая выручка" DESC LIMIT 10;
+    SUM(i.total) AS "Общая выручка"
+FROM customer c
+JOIN invoice i ON c.customer_id = i.customer_id
+GROUP BY c.customer_id, "Имя клиента", "Страна"
+ORDER BY "Общая выручка" DESC
+LIMIT 10;
         """,
     },
     {
         "name": "Customers by City",
-        "description": "Клиенты по городам",
+        "display_name": "Клиенты по городам",
         "sql": """
 SELECT
     c.city AS "Город",
     c.country AS "Страна",
     COUNT(c.customer_id) AS "Количество клиентов",
     SUM(i.total) AS "Выручка"
-FROM
-    customer c
-    JOIN invoice i ON c.customer_id = i.customer_id
-GROUP BY
-    c.city,
-    c.country
-ORDER BY
-    "Выручка" DESC;
+FROM customer c
+JOIN invoice i ON c.customer_id = i.customer_id
+GROUP BY "Город", "Страна"
+ORDER BY "Выручка" DESC;
         """,
     },
     {
         "name": "Top 10 Artists",
-        "description": "Топ-10 артистов",
+        "display_name": "Топ-10 артистов",
         "sql": """
 SELECT
     ar.name AS "Артист",
-    COUNT(il.track_id) AS "Количество продаж",
     SUM(il.unit_price) AS "Выручка"
-FROM
-    artist ar
-    JOIN album al ON ar.artist_id = al.artist_id
-    JOIN track t ON al.album_id = t.album_id
-    JOIN invoice_line il ON t.track_id = il.track_id
-GROUP BY
-    ar.artist_id,
-    ar.name
-ORDER BY
-    "Выручка" DESC LIMIT 10;
+FROM artist ar
+JOIN album al ON ar.artist_id = al.artist_id
+JOIN track t ON al.album_id = t.album_id
+JOIN invoice_line il ON t.track_id = il.track_id
+GROUP BY "Артист"
+ORDER BY "Выручка" DESC
+LIMIT 10;
         """,
     },
     {
         "name": "Monthly Revenue",
-        "description": "Выручка по месяцам",
+        "display_name": "Выручка по месяцам",
         "sql": """
 SELECT 
     DATE_TRUNC('month', invoice_date)::date AS "Месяц",
@@ -198,95 +183,67 @@ ORDER BY "Месяц";
     },
     {
         "name": "Top 10 Genres",
-        "description": "Топ-10 жанров",
+        "display_name": "Топ-10 жанров",
         "sql": """
 SELECT
     g.name AS "Жанр",
-    COUNT(il.track_id) AS "Количество продаж",
     SUM(il.unit_price) AS "Выручка"
-FROM
-    genre g
-    JOIN track t ON g.genre_id = t.genre_id
-    JOIN invoice_line il ON t.track_id = il.track_id
-GROUP BY
-    g.genre_id,
-    g.name
-ORDER BY
-    "Выручка" DESC LIMIT 10;
+FROM genre g
+JOIN track t ON g.genre_id = t.genre_id
+JOIN invoice_line il ON t.track_id = il.track_id
+GROUP BY "Жанр"
+ORDER BY "Выручка" DESC
+LIMIT 10;
         """,
     },
     {
         "name": "Top 10 Tracks",
-        "description": "Топ-10 треков",
+        "display_name": "Топ-10 треков",
         "sql": """
 SELECT
     t.name AS "Название трека",
     ar.name AS "Артист",
-    g.name AS "Жанр",
-    ROUND(t.milliseconds / 60000.0, 2) AS "Длительность (мин)",
-    il.unit_price AS "Цена",
     COUNT(il.track_id) AS "Количество продаж"
-FROM
-    track t
-    JOIN invoice_line il ON t.track_id = il.track_id
-    JOIN album al ON t.album_id = al.album_id
-    JOIN artist ar ON al.artist_id = ar.artist_id
-    JOIN genre g ON t.genre_id = g.genre_id
-GROUP BY
-    t.track_id,
-    t.name,
-    ar.name,
-    g.name,
-    t.milliseconds,
-    il.unit_price
-ORDER BY
-    "Количество продаж" DESC LIMIT 10;
+FROM track t
+JOIN invoice_line il ON t.track_id = il.track_id
+JOIN album al ON t.album_id = al.album_id
+JOIN artist ar ON al.artist_id = ar.artist_id
+GROUP BY "Название трека", "Артист"
+ORDER BY "Количество продаж" DESC
+LIMIT 10;
         """,
     },
     {
         "name": "Media Type Performance",
-        "description": "Выручка по типам носителей",
+        "display_name": "Выручка по типам носителей",
         "sql": """
 SELECT
     mt.name AS "Тип носителя",
-    COUNT(il.track_id) AS "Количество продаж",
     SUM(il.unit_price) AS "Выручка"
-FROM
-    media_type mt
-    JOIN track t ON mt.media_type_id = t.media_type_id
-    JOIN invoice_line il ON t.track_id = il.track_id
-GROUP BY
-    mt.media_type_id,
-    mt.name
-ORDER BY
-    "Выручка" DESC;
+FROM media_type mt
+JOIN track t ON mt.media_type_id = t.media_type_id
+JOIN invoice_line il ON t.track_id = il.track_id
+GROUP BY "Тип носителя"
+ORDER BY "Выручка" DESC;
         """,
     },
     {
         "name": "Support Rep Performance",
-        "description": "Эффективность менеджеров",
+        "display_name": "Эффективность менеджеров",
         "sql": """
 SELECT
     e.first_name || ' ' || e.last_name AS "Менеджер",
-    e.email AS "Email",
-    COUNT(c.customer_id) AS "Количество клиентов",
     SUM(i.total) AS "Выручка от клиентов"
-FROM
-    employee e
-    JOIN customer c ON e.employee_id = c.support_rep_id
-    JOIN invoice i ON c.customer_id = i.customer_id
-GROUP BY
-    e.employee_id,
-    e.first_name,
-    e.last_name,
-    e.email
-ORDER BY
-    "Выручка от клиентов" DESC;
+FROM employee e
+JOIN customer c ON e.employee_id = c.support_rep_id
+JOIN invoice i ON c.customer_id = i.customer_id
+GROUP BY "Менеджер"
+ORDER BY "Выручка от клиентов" DESC;
         """,
     },
     {
         "name": "New Customers by Month",
-        "description": "Новые клиенты по месяцам",
+        "display_name": "Новые клиенты по месяцам",
         "sql": """
 SELECT 
     DATE_TRUNC('month', i.invoice_date)::date AS "Месяц",
@@ -303,8 +260,6 @@ ORDER BY "Месяц";
         """,
     },
 ]
-
-
 # ========================
 # 4. Запуск: создание всех датасетов
 # ========================
@@ -318,28 +273,31 @@ if __name__ == "__main__":
         for ds in DATASETS:
             try:
                 dataset_id = create_virtual_dataset(
-                    db_id, ds["name"], ds["sql"]
+                    db_id,
+                    ds["name"],  # техническое имя (латиница)
+                    ds["display_name"],  # отображаемое имя (кириллица)
+                    ds["sql"],
                 )
                 created_datasets.append(
                     {
                         "name": ds["name"],
+                        "display_name": ds["display_name"],
                         "id": dataset_id,
-                        "description": ds["description"],
                     }
                 )
                 time.sleep(1)
             except Exception as e:
-                print(f"❌ Не удалось создать '{ds['name']}': {e}")
+                print(f"❌ Не удалось создать '{ds['display_name']}': {e}")
 
         # Итог
         print(
             f"\n🎉 УСПЕШНО СОЗДАНО {len(created_datasets)} виртуальных датасетов:"
         )
         for ds in created_datasets:
-            print(f"  • {ds['name']} (ID: {ds['id']}) — {ds['description']}")
+            print(f"  • {ds['display_name']} (ID: {ds['id']})")
 
         print(f"\n👉 Перейди в Superset: {BASE_URL}/dataset/list/")
-        print("   и начни строить графики!")
+        print("   и начни строить графики вручную!")
 
     except Exception as e:
         print(f"\n❌ КРИТИЧЕСКАЯ ОШИБКА: {e}")

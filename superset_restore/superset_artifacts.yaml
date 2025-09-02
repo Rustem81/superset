@@ -1,0 +1,892 @@
+metadata:
+  exported_at: '2025-09-02 16:18:40'
+  superset_url: http://localhost:8088
+  export_tool: export_superset_artifacts.py
+database:
+  database_name: Chinook
+  sqlalchemy_uri: postgresql+psycopg2://admin:admin@postgres:5432/chinook_serial
+  expose_in_sqllab: true
+  allow_run_async: false
+  allow_ctas: false
+  allow_cvas: false
+  allow_dml: false
+  cache_timeout: null
+  uuid: a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8
+  encrypted_extra: null
+datasets:
+  - id: 1
+    table_name: Общая статистика
+    database_id: 1
+    sql:
+      "SELECT\n    COUNT(*) AS \"Количество заказов\",\n    SUM(total) AS \"Общая\
+      \ выручка\",\n    AVG(total) AS \"Средний чек\",\n    MIN(invoice_date) AS \"\
+      Первая продажа\",\n    MAX(invoice_date) AS \"Последняя продажа\"\nFROM invoice;"
+  - id: 2
+    table_name: Выручка по странам
+    database_id: 1
+    sql:
+      "SELECT\n    billing_country AS \"Страна\",\n    SUM(total) AS \"Выручка\"\
+      ,\n    COUNT(*) AS \"Количество заказов\"\nFROM invoice\nGROUP BY \"Страна\"\n\
+      ORDER BY \"Выручка\" DESC;"
+  - id: 3
+    table_name: Топ-10 клиентов
+    database_id: 1
+    sql:
+      "SELECT\n    c.first_name || ' ' || c.last_name AS \"Имя клиента\",\n    c.country\
+      \ AS \"Страна\",\n    SUM(i.total) AS \"Общая выручка\"\nFROM customer c\nJOIN\
+      \ invoice i ON c.customer_id = i.customer_id\nGROUP BY c.customer_id, \"Имя клиента\"\
+      , \"Страна\"\nORDER BY \"Общая выручка\" DESC\nLIMIT 10;"
+  - id: 4
+    table_name: Клиенты по городам
+    database_id: 1
+    sql:
+      "SELECT\n    c.city AS \"Город\",\n    c.country AS \"Страна\",\n    COUNT(c.customer_id)\
+      \ AS \"Количество клиентов\",\n    SUM(i.total) AS \"Выручка\"\nFROM customer\
+      \ c\nJOIN invoice i ON c.customer_id = i.customer_id\nGROUP BY \"Город\", \"Страна\"\
+      \nORDER BY \"Выручка\" DESC;"
+  - id: 5
+    table_name: Топ-10 артистов
+    database_id: 1
+    sql:
+      "SELECT\n    ar.name AS \"Артист\",\n    SUM(il.unit_price) AS \"Выручка\"\n\
+      FROM artist ar\nJOIN album al ON ar.artist_id = al.artist_id\nJOIN track t ON\
+      \ al.album_id = t.album_id\nJOIN invoice_line il ON t.track_id = il.track_id\n\
+      GROUP BY \"Артист\"\nORDER BY \"Выручка\" DESC\nLIMIT 10;"
+  - id: 6
+    table_name: Выручка по месяцам
+    database_id: 1
+    sql:
+      "SELECT \n    DATE_TRUNC('month', invoice_date)::date AS \"Месяц\",\n    SUM(total)\
+      \ AS \"Выручка\"\nFROM invoice\nGROUP BY \"Месяц\"\nORDER BY \"Месяц\";"
+  - id: 7
+    table_name: Топ-10 жанров
+    database_id: 1
+    sql:
+      "SELECT\n    g.name AS \"Жанр\",\n    SUM(il.unit_price) AS \"Выручка\"\nFROM\
+      \ genre g\nJOIN track t ON g.genre_id = t.genre_id\nJOIN invoice_line il ON t.track_id\
+      \ = il.track_id\nGROUP BY \"Жанр\"\nORDER BY \"Выручка\" DESC\nLIMIT 10;"
+  - id: 8
+    table_name: Топ-10 треков
+    database_id: 1
+    sql:
+      "SELECT\n    t.name AS \"Название трека\",\n    ar.name AS \"Артист\",\n  \
+      \  COUNT(il.track_id) AS \"Количество продаж\"\nFROM track t\nJOIN invoice_line\
+      \ il ON t.track_id = il.track_id\nJOIN album al ON t.album_id = al.album_id\n\
+      JOIN artist ar ON al.artist_id = ar.artist_id\nGROUP BY \"Название трека\", \"\
+      Артист\"\nORDER BY \"Количество продаж\" DESC\nLIMIT 10;"
+  - id: 9
+    table_name: Выручка по типам носителей
+    database_id: 1
+    sql:
+      "SELECT\n    mt.name AS \"Тип носителя\",\n    SUM(il.unit_price) AS \"Выручка\"\
+      \nFROM media_type mt\nJOIN track t ON mt.media_type_id = t.media_type_id\nJOIN\
+      \ invoice_line il ON t.track_id = il.track_id\nGROUP BY \"Тип носителя\"\nORDER\
+      \ BY \"Выручка\" DESC;"
+  - id: 10
+    table_name: Эффективность менеджеров
+    database_id: 1
+    sql:
+      "SELECT\n    e.first_name || ' ' || e.last_name AS \"Менеджер\",\n    SUM(i.total)\
+      \ AS \"Выручка от клиентов\"\nFROM employee e\nJOIN customer c ON e.employee_id\
+      \ = c.support_rep_id\nJOIN invoice i ON c.customer_id = i.customer_id\nGROUP BY\
+      \ \"Менеджер\"\nORDER BY \"Выручка от клиентов\" DESC;"
+  - id: 11
+    table_name: Новые клиенты по месяцам
+    database_id: 1
+    sql:
+      "SELECT \n    DATE_TRUNC('month', i.invoice_date)::date AS \"Месяц\",\n   \
+      \ COUNT(DISTINCT c.customer_id) AS \"Новые клиенты\"\nFROM customer c\nJOIN invoice\
+      \ i ON c.customer_id = i.customer_id\nWHERE i.invoice_date = (\n    SELECT MIN(invoice_date)\n\
+      \    FROM invoice i2\n    WHERE i2.customer_id = c.customer_id\n)\nGROUP BY \"\
+      Месяц\"\nORDER BY \"Месяц\";"
+charts:
+  - id: 15
+    slice_name: Топ-10 артистов
+    viz_type: pie
+    datasource_id: null
+    datasource_type: null
+    params: '{"datasource":"5__table","viz_type":"pie","slice_id":15,"groupby":["Артист"],"metric":{"aggregate":"SUM","column":{"advanced_data_type":null,"certification_details":null,"certified_by":null,"column_name":"Выручка","description":null,"expression":null,"filterable":true,"groupby":true,"id":17,"is_certified":false,"is_dttm":false,"python_date_format":null,"type":"DECIMAL","type_generic":0,"verbose_name":null,"warning_markdown":null},"datasourceWarning":false,"expressionType":"SIMPLE","hasCustomLabel":false,"label":"SUM(Выручка)","optionName":"metric_7ka4pnsz10v_ywg0ii9z7ek","sqlExpression":null},"adhoc_filters":[],"row_limit":100,"sort_by_metric":true,"color_scheme":"supersetColors","show_labels_threshold":5,"roseType":null,"show_legend":true,"legendType":"scroll","legendOrientation":"top","legendMargin":null,"label_type":"key_value","number_format":"~g","date_format":"smart_date","show_labels":true,"labels_outside":true,"label_line":true,"show_total":true,"outerRadius":70,"donut":true,"innerRadius":30,"extra_form_data":{},"dashboards":[1]}'
+  - id: 3
+    slice_name: Средний чек
+    viz_type: big_number_total
+    datasource_id: null
+    datasource_type: null
+    params:
+      '{"datasource":"1__table","viz_type":"big_number_total","slice_id":3,"metric":{"aggregate":"AVG","column":{"column_name":"Средний
+      чек"},"expressionType":"SIMPLE"},"adhoc_filters":[{"clause":"WHERE","subject":"Первая
+      продажа","operator":"TEMPORAL_RANGE","comparator":"No filter","expressionType":"SIMPLE"}],"header_font_size":0.4,"subheader_font_size":0.15,"y_axis_format":"SMART_NUMBER","time_format":"smart_date","extra_form_data":{},"dashboards":[1]}'
+  - id: 2
+    slice_name: Общая выручка
+    viz_type: big_number_total
+    datasource_id: null
+    datasource_type: null
+    params:
+      '{"datasource":"1__table","viz_type":"big_number_total","slice_id":2,"metric":{"aggregate":"SUM","column":{"column_name":"Общая
+      выручка"},"expressionType":"SIMPLE"},"adhoc_filters":[{"clause":"WHERE","subject":"Первая
+      продажа","operator":"TEMPORAL_RANGE","comparator":"No filter","expressionType":"SIMPLE"}],"header_font_size":0.4,"subheader_font_size":0.15,"y_axis_format":"~g","currency_format":{"symbol":"USD"},"time_format":"smart_date","conditional_formatting":[],"extra_form_data":{},"dashboards":[1]}'
+  - id: 1
+    slice_name: Количество заказов
+    viz_type: big_number_total
+    datasource_id: null
+    datasource_type: null
+    params:
+      '{"datasource":"1__table","viz_type":"big_number_total","slice_id":1,"metric":{"aggregate":"SUM","column":{"column_name":"Количество
+      заказов"},"expressionType":"SIMPLE"},"adhoc_filters":[{"clause":"WHERE","subject":"Первая
+      продажа","operator":"TEMPORAL_RANGE","comparator":"No filter","expressionType":"SIMPLE"}],"header_font_size":0.4,"subheader_font_size":0.15,"y_axis_format":"SMART_NUMBER","time_format":"smart_date","extra_form_data":{},"dashboards":[1]}'
+  - id: 14
+    slice_name: Топ-10 клиентов
+    viz_type: table
+    datasource_id: null
+    datasource_type: null
+    params:
+      '{"datasource":"3__table","viz_type":"table","query_mode":"aggregate","groupby":["Имя
+      клиента","Страна"],"time_grain_sqla":"P1D","temporal_columns_lookup":{},"metrics":[{"expressionType":"SIMPLE","column":{"advanced_data_type":null,"certification_details":null,"certified_by":null,"column_name":"Общая
+      выручка","description":null,"expression":null,"filterable":true,"groupby":true,"id":11,"is_certified":false,"is_dttm":false,"python_date_format":null,"type":"DECIMAL","type_generic":0,"verbose_name":null,"warning_markdown":null},"aggregate":"SUM","sqlExpression":null,"datasourceWarning":false,"hasCustomLabel":true,"label":"Общая
+      выручка ","optionName":"metric_4qprz4jqgdq_u9aiaz49i49"}],"all_columns":[],"percent_metrics":[],"adhoc_filters":[],"order_by_cols":[],"order_desc":true,"row_limit":1000,"server_page_length":10,"table_timestamp_format":"smart_date","allow_render_html":true,"show_cell_bars":true,"color_pn":true,"comparison_color_scheme":"Green","comparison_type":"values","extra_form_data":{},"dashboards":[]}'
+  - id: 13
+    slice_name: Топ-10 жанров
+    viz_type: echarts_timeseries_bar
+    datasource_id: null
+    datasource_type: null
+    params: '{"datasource":"7__table","viz_type":"echarts_timeseries_bar","x_axis":"Жанр","time_grain_sqla":"P1D","x_axis_sort_asc":true,"x_axis_sort_series":"name","x_axis_sort_series_ascending":true,"metrics":[{"expressionType":"SIMPLE","column":{"advanced_data_type":null,"certification_details":null,"certified_by":null,"column_name":"Выручка","description":null,"expression":null,"filterable":true,"groupby":true,"id":21,"is_certified":false,"is_dttm":false,"python_date_format":null,"type":"DECIMAL","type_generic":0,"verbose_name":null,"warning_markdown":null},"aggregate":"SUM","sqlExpression":null,"datasourceWarning":false,"hasCustomLabel":false,"label":"SUM(Выручка)","optionName":"metric_f3qa41w58hm_cdcj7ssjols"}],"groupby":[],"adhoc_filters":[],"order_desc":true,"row_limit":10000,"truncate_metric":true,"show_empty_columns":true,"comparison_type":"values","annotation_layers":[],"forecastPeriods":10,"forecastInterval":0.8,"orientation":"vertical","x_axis_title_margin":15,"y_axis_title_margin":30,"y_axis_title_position":"Left","sort_series_type":"sum","color_scheme":"supersetColors","time_shift_color":true,"show_value":true,"only_total":true,"show_legend":true,"legendType":"scroll","legendOrientation":"top","x_axis_time_format":"smart_date","y_axis_format":"~g","y_axis_bounds":[null,null],"truncateXAxis":true,"rich_tooltip":true,"showTooltipTotal":true,"showTooltipPercentage":false,"tooltipTimeFormat":"smart_date","extra_form_data":{},"dashboards":[]}'
+  - id: 12
+    slice_name: Эффективность менеджеров
+    viz_type: echarts_timeseries_bar
+    datasource_id: null
+    datasource_type: null
+    params:
+      '{"datasource":"10__table","viz_type":"echarts_timeseries_bar","x_axis":"Менеджер","time_grain_sqla":"P1D","x_axis_sort_asc":true,"x_axis_sort_series":"name","x_axis_sort_series_ascending":true,"metrics":[{"expressionType":"SIMPLE","column":{"advanced_data_type":null,"certification_details":null,"certified_by":null,"column_name":"Выручка
+      от клиентов","description":null,"expression":null,"filterable":true,"groupby":true,"id":28,"is_certified":false,"is_dttm":false,"python_date_format":null,"type":"DECIMAL","type_generic":0,"verbose_name":null,"warning_markdown":null},"aggregate":"SUM","sqlExpression":null,"datasourceWarning":false,"hasCustomLabel":false,"label":"SUM(Выручка
+      от клиентов)","optionName":"metric_a143cpvg77j_s2bi06ytz1"}],"groupby":[],"adhoc_filters":[],"order_desc":true,"row_limit":10000,"truncate_metric":true,"show_empty_columns":true,"comparison_type":"values","annotation_layers":[],"forecastPeriods":10,"forecastInterval":0.8,"orientation":"vertical","x_axis_title_margin":15,"y_axis_title_margin":30,"y_axis_title_position":"Left","sort_series_type":"sum","color_scheme":"supersetColors","time_shift_color":true,"show_value":true,"only_total":true,"show_legend":true,"legendType":"scroll","legendOrientation":"top","x_axis_time_format":"smart_date","y_axis_format":"SMART_NUMBER","logAxis":false,"minorSplitLine":false,"truncateYAxis":false,"y_axis_bounds":[null,null],"truncateXAxis":true,"rich_tooltip":true,"showTooltipTotal":true,"showTooltipPercentage":true,"tooltipSortByMetric":true,"tooltipTimeFormat":"smart_date","extra_form_data":{},"dashboards":[]}'
+  - id: 11
+    slice_name: Выручка по типам носителей
+    viz_type: pie
+    datasource_id: null
+    datasource_type: null
+    params: '{"datasource":"9__table","viz_type":"pie","groupby":["Тип носителя"],"metric":{"expressionType":"SIMPLE","column":{"advanced_data_type":null,"certification_details":null,"certified_by":null,"column_name":"Выручка","description":null,"expression":null,"filterable":true,"groupby":true,"id":26,"is_certified":false,"is_dttm":false,"python_date_format":null,"type":"DECIMAL","type_generic":0,"verbose_name":null,"warning_markdown":null},"aggregate":"SUM","sqlExpression":null,"datasourceWarning":false,"hasCustomLabel":false,"label":"SUM(Выручка)","optionName":"metric_p0ctdyc16_bgan6pone7f"},"adhoc_filters":[],"row_limit":100,"sort_by_metric":true,"color_scheme":"supersetColors","show_labels_threshold":5,"show_legend":true,"legendType":"scroll","legendOrientation":"top","label_type":"key","number_format":"~g","date_format":"smart_date","show_labels":true,"labels_outside":true,"label_line":true,"show_total":true,"outerRadius":70,"donut":true,"innerRadius":30,"extra_form_data":{},"dashboards":[]}'
+  - id: 10
+    slice_name: Топ-10 треков
+    viz_type: table
+    datasource_id: null
+    datasource_type: null
+    params:
+      '{"datasource":"8__table","viz_type":"table","query_mode":"aggregate","groupby":["Название
+      трека","Артист"],"time_grain_sqla":"P1D","temporal_columns_lookup":{},"metrics":[{"expressionType":"SIMPLE","column":{"advanced_data_type":null,"certification_details":null,"certified_by":null,"column_name":"Количество
+      продаж","description":null,"expression":null,"filterable":true,"groupby":true,"id":24,"is_certified":false,"is_dttm":false,"python_date_format":null,"type":"LONGINTEGER","type_generic":0,"verbose_name":null,"warning_markdown":null},"aggregate":"SUM","sqlExpression":null,"datasourceWarning":false,"hasCustomLabel":true,"label":"Количество
+      продаж","optionName":"metric_h9k1jwd367o_anzrwmm1vle"}],"all_columns":[],"percent_metrics":[],"adhoc_filters":[],"order_by_cols":[],"order_desc":true,"row_limit":1000,"server_page_length":10,"table_timestamp_format":"smart_date","allow_render_html":true,"show_cell_bars":true,"color_pn":true,"comparison_color_scheme":"Green","comparison_type":"values","extra_form_data":{},"dashboards":[]}'
+  - id: 9
+    slice_name: Выручка по жанрам
+    viz_type: pie
+    datasource_id: null
+    datasource_type: null
+    params: '{"datasource":"7__table","viz_type":"pie","groupby":["Жанр"],"metric":{"expressionType":"SIMPLE","column":{"advanced_data_type":null,"certification_details":null,"certified_by":null,"column_name":"Выручка","description":null,"expression":null,"filterable":true,"groupby":true,"id":21,"is_certified":false,"is_dttm":false,"python_date_format":null,"type":"DECIMAL","type_generic":0,"verbose_name":null,"warning_markdown":null},"aggregate":"SUM","sqlExpression":null,"datasourceWarning":false,"hasCustomLabel":false,"label":"SUM(Выручка)","optionName":"metric_24scky0tvqn_kw7zxqphmvg"},"adhoc_filters":[],"row_limit":100,"sort_by_metric":true,"color_scheme":"supersetColors","show_labels_threshold":5,"show_legend":true,"legendType":"scroll","legendOrientation":"top","label_type":"key","number_format":"SMART_NUMBER","date_format":"smart_date","show_labels":true,"labels_outside":true,"label_line":true,"show_total":true,"outerRadius":70,"donut":true,"innerRadius":30,"extra_form_data":{},"dashboards":[]}'
+  - id: 8
+    slice_name: Клиенты по городам
+    viz_type: bubble_v2
+    datasource_id: null
+    datasource_type: null
+    params:
+      '{"datasource":"4__table","viz_type":"bubble_v2","entity":"Страна","x":{"expressionType":"SIMPLE","column":{"advanced_data_type":null,"certification_details":null,"certified_by":null,"column_name":"Количество
+      клиентов","description":null,"expression":null,"filterable":true,"groupby":true,"id":14,"is_certified":false,"is_dttm":false,"python_date_format":null,"type":"LONGINTEGER","type_generic":0,"verbose_name":null,"warning_markdown":null},"aggregate":"SUM","sqlExpression":null,"datasourceWarning":false,"hasCustomLabel":false,"label":"SUM(Количество
+      клиентов)","optionName":"metric_4rsilgkwby9_i1q09f3439r"},"y":{"expressionType":"SIMPLE","column":{"advanced_data_type":null,"certification_details":null,"certified_by":null,"column_name":"Город","description":null,"expression":null,"filterable":true,"groupby":true,"id":12,"is_certified":false,"is_dttm":false,"python_date_format":null,"type":"STRING","type_generic":1,"verbose_name":null,"warning_markdown":null},"aggregate":"COUNT","sqlExpression":null,"datasourceWarning":false,"hasCustomLabel":false,"label":"COUNT(Город)","optionName":"metric_z3lzivtv1j8_vqoo0ithtgc"},"adhoc_filters":[],"size":{"expressionType":"SIMPLE","column":{"advanced_data_type":null,"certification_details":null,"certified_by":null,"column_name":"Выручка","description":null,"expression":null,"filterable":true,"groupby":true,"id":15,"is_certified":false,"is_dttm":false,"python_date_format":null,"type":"DECIMAL","type_generic":0,"verbose_name":null,"warning_markdown":null},"aggregate":"SUM","sqlExpression":null,"datasourceWarning":false,"hasCustomLabel":false,"label":"SUM(Выручка)","optionName":"metric_yl5y2ujlb8m_m8nmneqwrvk"},"order_desc":true,"row_limit":50000,"color_scheme":"supersetColors","show_legend":true,"legendType":"scroll","legendOrientation":"top","max_bubble_size":"25","tooltipSizeFormat":"SMART_NUMBER","opacity":0.6,"x_axis_title_margin":30,"xAxisFormat":"SMART_NUMBER","y_axis_title_margin":30,"y_axis_format":"SMART_NUMBER","truncateXAxis":true,"y_axis_bounds":[null,null],"extra_form_data":{},"dashboards":[]}'
+  - id: 7
+    slice_name: Новые клиенты по месяцам
+    viz_type: pie
+    datasource_id: null
+    datasource_type: null
+    params:
+      '{"datasource":"11__table","viz_type":"pie","groupby":["Месяц"],"metric":{"expressionType":"SIMPLE","column":{"advanced_data_type":null,"certification_details":null,"certified_by":null,"column_name":"Новые
+      клиенты","description":null,"expression":null,"filterable":true,"groupby":true,"id":30,"is_certified":false,"is_dttm":false,"python_date_format":null,"type":"LONGINTEGER","type_generic":0,"verbose_name":null,"warning_markdown":null},"aggregate":"COUNT_DISTINCT","sqlExpression":null,"datasourceWarning":false,"hasCustomLabel":false,"label":"COUNT_DISTINCT(Новые
+      клиенты)","optionName":"metric_mzoty0fpdfe_dos34li4m9l"},"adhoc_filters":[{"clause":"WHERE","comparator":"No
+      filter","expressionType":"SIMPLE","operator":"TEMPORAL_RANGE","subject":"Месяц"}],"row_limit":100,"sort_by_metric":true,"color_scheme":"supersetColors","show_labels_threshold":5,"show_legend":true,"legendType":"scroll","legendOrientation":"top","label_type":"key","number_format":"~g","date_format":"smart_date","show_labels":true,"labels_outside":true,"label_line":false,"show_total":true,"outerRadius":70,"donut":true,"innerRadius":30,"extra_form_data":{},"dashboards":[]}'
+  - id: 6
+    slice_name: Выручка по странам
+    viz_type: table
+    datasource_id: null
+    datasource_type: null
+    params:
+      '{"datasource":"3__table","viz_type":"table","query_mode":"aggregate","groupby":["Имя
+      клиента","Страна"],"time_grain_sqla":"P1D","temporal_columns_lookup":{},"metrics":[{"expressionType":"SIMPLE","column":{"advanced_data_type":null,"certification_details":null,"certified_by":null,"column_name":"Общая
+      выручка","description":null,"expression":null,"filterable":true,"groupby":true,"id":11,"is_certified":false,"is_dttm":false,"python_date_format":null,"type":"DECIMAL","type_generic":0,"verbose_name":null,"warning_markdown":null},"aggregate":"SUM","sqlExpression":null,"datasourceWarning":false,"hasCustomLabel":true,"label":"Общая
+      выручка","optionName":"metric_33lxl0ios2k_yzve18pybk"}],"all_columns":[],"percent_metrics":[],"adhoc_filters":[],"order_by_cols":[],"order_desc":true,"row_limit":1000,"server_page_length":10,"table_timestamp_format":"smart_date","allow_render_html":true,"show_cell_bars":true,"color_pn":true,"comparison_color_scheme":"Green","comparison_type":"values","extra_form_data":{},"dashboards":[]}'
+  - id: 5
+    slice_name: Новые клиенты по месяцам
+    viz_type: echarts_timeseries_bar
+    datasource_id: null
+    datasource_type: null
+    params:
+      '{"datasource":"11__table","viz_type":"echarts_timeseries_bar","x_axis":"Месяц","time_grain_sqla":"P1M","metrics":[{"expressionType":"SIMPLE","column":{"advanced_data_type":null,"certification_details":null,"certified_by":null,"column_name":"Новые
+      клиенты","description":null,"expression":null,"filterable":true,"groupby":true,"id":30,"is_certified":false,"is_dttm":false,"python_date_format":null,"type":"LONGINTEGER","type_generic":0,"verbose_name":null,"warning_markdown":null},"aggregate":"SUM","sqlExpression":null,"datasourceWarning":false,"hasCustomLabel":false,"label":"SUM(Новые
+      клиенты)","optionName":"metric_056qj1phbdyl_wyh3d0sky8"}],"groupby":[],"adhoc_filters":[{"clause":"WHERE","subject":"Месяц","operator":"TEMPORAL_RANGE","comparator":"No
+      filter","expressionType":"SIMPLE"}],"row_limit":10000,"truncate_metric":true,"show_empty_columns":true,"comparison_type":"values","annotation_layers":[],"forecastPeriods":10,"forecastInterval":0.8,"orientation":"vertical","x_axis_title_margin":15,"y_axis_title_margin":30,"y_axis_title_position":"Left","sort_series_type":"sum","color_scheme":"supersetColors","show_value":true,"show_legend":true,"legendType":"scroll","legendOrientation":"top","x_axis_time_format":"smart_date","y_axis_format":"SMART_NUMBER","y_axis_bounds":[null,null],"truncateXAxis":true,"rich_tooltip":true,"showTooltipTotal":true,"tooltipTimeFormat":"smart_date","extra_form_data":{},"dashboards":[]}'
+  - id: 4
+    slice_name: Выручка по странам
+    viz_type: echarts_timeseries_bar
+    datasource_id: null
+    datasource_type: null
+    params: '{"datasource":"2__table","viz_type":"echarts_timeseries_bar","x_axis":"Страна","time_grain_sqla":"P1D","x_axis_sort_asc":true,"x_axis_sort_series":"name","x_axis_sort_series_ascending":true,"metrics":[{"expressionType":"SIMPLE","column":{"advanced_data_type":null,"certification_details":null,"certified_by":null,"column_name":"Выручка","description":null,"expression":null,"filterable":true,"groupby":true,"id":7,"is_certified":false,"is_dttm":false,"python_date_format":null,"type":"DECIMAL","type_generic":0,"verbose_name":null,"warning_markdown":null},"aggregate":"SUM","sqlExpression":null,"datasourceWarning":false,"hasCustomLabel":false,"label":"SUM(Выручка)","optionName":"metric_nrj1457c5ca_0ymhjlzpiftj"}],"groupby":[],"adhoc_filters":[],"timeseries_limit_metric":{"expressionType":"SIMPLE","column":{"advanced_data_type":null,"certification_details":null,"certified_by":null,"column_name":"Выручка","description":null,"expression":null,"filterable":true,"groupby":true,"id":7,"is_certified":false,"is_dttm":false,"python_date_format":null,"type":"DECIMAL","type_generic":0,"verbose_name":null,"warning_markdown":null},"aggregate":"SUM","sqlExpression":null,"datasourceWarning":false,"hasCustomLabel":false,"label":"SUM(Выручка)","optionName":"metric_ke99qfqwxuh_2i1yxunr2tu"},"order_desc":true,"row_limit":10000,"truncate_metric":true,"show_empty_columns":true,"comparison_type":"values","annotation_layers":[],"forecastPeriods":10,"forecastInterval":0.8,"orientation":"vertical","x_axis_title_margin":15,"y_axis_title_margin":30,"y_axis_title_position":"Left","sort_series_type":"sum","color_scheme":"supersetColors","time_shift_color":true,"show_value":true,"only_total":true,"show_legend":true,"legendType":"scroll","legendOrientation":"top","x_axis_time_format":"smart_date","y_axis_format":"~g","y_axis_bounds":[null,null],"truncateXAxis":true,"rich_tooltip":true,"showTooltipTotal":true,"tooltipTimeFormat":"smart_date","extra_form_data":{},"dashboards":[]}'
+dashboard:
+  id: 1
+  dashboard_title: Статистика лейбла
+  slug: null
+  position_json:
+    CHART-0RFT_onBkyaPUcK1i6xzI:
+      children: []
+      id: CHART-0RFT_onBkyaPUcK1i6xzI
+      meta:
+        chartId: 3
+        height: 31
+        sliceName: Средний чек
+        uuid: 3938be49-daa7-4200-aa3a-a2fcb2fdfce9
+        width: 4
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - ROW-OKxrwjNhdBFyv-jejBsHS
+      type: CHART
+    CHART-1dBYQJilpSWXwoJxr2BNT:
+      children: []
+      id: CHART-1dBYQJilpSWXwoJxr2BNT
+      meta:
+        chartId: 15
+        height: 50
+        sliceName: Топ-10 артистов
+        uuid: 87ed3ae4-4021-4f0d-9222-a8ec01a6acfa
+        width: 6
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-uG93ULzdEWY5QTv0paCuK
+        - ROW-v-pLU_3ql0xSkSP8pWI2L
+      type: CHART
+    CHART-2QmQDDqm0W7ordcDf-NVK:
+      children: []
+      id: CHART-2QmQDDqm0W7ordcDf-NVK
+      meta:
+        chartId: 8
+        height: 50
+        sliceName: Клиенты по городам
+        uuid: a6fe5e9e-0c0e-4804-9778-396489556212
+        width: 6
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-CFWHiayqfNgSIcPhWHR0t
+        - ROW-v5vXHogjIvWg7IQ3CdZpS
+      type: CHART
+    CHART-3BYbqnML3Xhin8awU9cMw:
+      children: []
+      id: CHART-3BYbqnML3Xhin8awU9cMw
+      meta:
+        chartId: 11
+        height: 50
+        sliceName: Выручка по типам носителей
+        uuid: 66acc4e7-4c00-41ec-b0db-5369e408518a
+        width: 6
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-3QiPoYhzF5uXoeZbtoMZG
+        - ROW-wZrdfPQl8YbIc0u-psYxB
+      type: CHART
+    CHART-Fb2SlXAkX4pUaj0407aCp:
+      children: []
+      id: CHART-Fb2SlXAkX4pUaj0407aCp
+      meta:
+        chartId: 5
+        height: 54
+        sliceName: Новые клиенты по месяцам
+        uuid: c2964a38-e443-41ea-812d-54f18f681010
+        width: 6
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-Ap54--e7AEoxll3XZkdDe
+        - ROW-zRlIHPSiIu3ThAyn1mlVp
+      type: CHART
+    CHART-HCvUtW26NYurysAeXETIf:
+      children: []
+      id: CHART-HCvUtW26NYurysAeXETIf
+      meta:
+        chartId: 14
+        height: 50
+        sliceName: Топ-10 клиентов
+        uuid: dd889250-c773-45db-ab36-260b3430b618
+        width: 6
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-uG93ULzdEWY5QTv0paCuK
+        - ROW-v-pLU_3ql0xSkSP8pWI2L
+      type: CHART
+    CHART-Tw6wMuhDMSY6D_lQxtaz7:
+      children: []
+      id: CHART-Tw6wMuhDMSY6D_lQxtaz7
+      meta:
+        chartId: 10
+        height: 50
+        sliceName: Топ-10 треков
+        uuid: 30088ca1-a7ff-43ab-b502-cc9ed04da1c0
+        width: 6
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-3QiPoYhzF5uXoeZbtoMZG
+        - ROW-wZrdfPQl8YbIc0u-psYxB
+      type: CHART
+    CHART-bPdxmE156Ny6U3NxDbMTb:
+      children: []
+      id: CHART-bPdxmE156Ny6U3NxDbMTb
+      meta:
+        chartId: 1
+        height: 31
+        sliceName: Количество заказов
+        uuid: c4cb2190-f036-4ec5-803b-c9aeb2995066
+        width: 4
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - ROW-OKxrwjNhdBFyv-jejBsHS
+      type: CHART
+    CHART-ffV55SWK-M37ESVCkPZCI:
+      children: []
+      id: CHART-ffV55SWK-M37ESVCkPZCI
+      meta:
+        chartId: 2
+        height: 31
+        sliceName: Общая выручка
+        uuid: 8a645a90-e704-40ff-b932-db090e49c88c
+        width: 4
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - ROW-OKxrwjNhdBFyv-jejBsHS
+      type: CHART
+    CHART-n5OXe74fkyBXBshDT1zuw:
+      children: []
+      id: CHART-n5OXe74fkyBXBshDT1zuw
+      meta:
+        chartId: 9
+        height: 50
+        sliceName: Выручка по жанрам
+        uuid: 841974e4-7d79-41a8-af2d-0db16bc9ee0b
+        width: 6
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-CFWHiayqfNgSIcPhWHR0t
+        - ROW-v5vXHogjIvWg7IQ3CdZpS
+      type: CHART
+    CHART-sVbWAILacOyvQt01xocBz:
+      children: []
+      id: CHART-sVbWAILacOyvQt01xocBz
+      meta:
+        chartId: 12
+        height: 50
+        sliceName: Эффективность менеджеров
+        uuid: 7155337b-3326-461c-9b96-79db2cb6ce9d
+        width: 6
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-nQlrlY9Tj0BikqKoGNpeX
+        - ROW-sY1PdIz_Vm-vyeutlq83U
+      type: CHART
+    CHART-sWaJr6zQ_hDHv2AAIm9dS:
+      children: []
+      id: CHART-sWaJr6zQ_hDHv2AAIm9dS
+      meta:
+        chartId: 13
+        height: 50
+        sliceName: Топ-10 жанров
+        uuid: 382aa9df-09be-4dac-9585-ab5e589d34e0
+        width: 6
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-nQlrlY9Tj0BikqKoGNpeX
+        - ROW-sY1PdIz_Vm-vyeutlq83U
+      type: CHART
+    CHART-ssMVDd3WtLlQD-jukX8Rl:
+      children: []
+      id: CHART-ssMVDd3WtLlQD-jukX8Rl
+      meta:
+        chartId: 6
+        height: 54
+        sliceName: Выручка по странам
+        uuid: 7d1f73e7-1fc9-4f6e-9a2a-5b5e91c017bf
+        width: 6
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-Ap54--e7AEoxll3XZkdDe
+        - ROW-zRlIHPSiIu3ThAyn1mlVp
+      type: CHART
+    DASHBOARD_VERSION_KEY: v2
+    GRID_ID:
+      children:
+        - ROW-xWS8lHln9j1lA6LGSWkI3
+        - ROW-Xaiob3MpkQz3Sug4HR-v5
+        - ROW-OKxrwjNhdBFyv-jejBsHS
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+      id: GRID_ID
+      parents:
+        - ROOT_ID
+      type: GRID
+    HEADER_ID:
+      id: HEADER_ID
+      meta:
+        text: Статистика лейбла
+      type: HEADER
+    MARKDOWN--J57zo2yBsBzlZ6E8LcSq:
+      children: []
+      id: MARKDOWN--J57zo2yBsBzlZ6E8LcSq
+      meta:
+        code: '## 🌍 Новые клиенты по месяцам'
+        height: 11
+        width: 6
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-Ap54--e7AEoxll3XZkdDe
+        - ROW-qSElqcNMvdgL2nUlSWNE_
+      type: MARKDOWN
+    MARKDOWN-0xJnNalTsy5QRuP04HrKo:
+      children: []
+      id: MARKDOWN-0xJnNalTsy5QRuP04HrKo
+      meta:
+        code: '## 💰 Общая выручка'
+        height: 11
+        width: 4
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - ROW-Xaiob3MpkQz3Sug4HR-v5
+      type: MARKDOWN
+    MARKDOWN-DRX1zFFq-0C8svKsUUx4g:
+      children: []
+      id: MARKDOWN-DRX1zFFq-0C8svKsUUx4g
+      meta:
+        code: '## 🛒 Кол-во заказов'
+        height: 11
+        width: 4
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - ROW-Xaiob3MpkQz3Sug4HR-v5
+      type: MARKDOWN
+    MARKDOWN-RQyY8ad3rrQQDY027HtX0:
+      children: []
+      id: MARKDOWN-RQyY8ad3rrQQDY027HtX0
+      meta:
+        code: '## 🏙️ Клиенты по городам'
+        height: 11
+        width: 6
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-CFWHiayqfNgSIcPhWHR0t
+        - ROW-RzIw7EqT6fsGX0kTne_Ha
+      type: MARKDOWN
+    MARKDOWN-UHiMxZWiyRLb8PSBgtw58:
+      children: []
+      id: MARKDOWN-UHiMxZWiyRLb8PSBgtw58
+      meta:
+        code: '## 📊 Средний чек'
+        height: 11
+        width: 4
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - ROW-Xaiob3MpkQz3Sug4HR-v5
+      type: MARKDOWN
+    MARKDOWN-VimdsSvDpgA5hjL3KHxiR:
+      children: []
+      id: MARKDOWN-VimdsSvDpgA5hjL3KHxiR
+      meta:
+        code: '# 🔷 Общая статистика '
+        height: 12
+        width: 12
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - ROW-xWS8lHln9j1lA6LGSWkI3
+      type: MARKDOWN
+    MARKDOWN-VwmZiaMK0U6VadrWvQzY5:
+      children: []
+      id: MARKDOWN-VwmZiaMK0U6VadrWvQzY5
+      meta:
+        code: '## 🎵 Топ-10 жанров'
+        height: 12
+        width: 6
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-nQlrlY9Tj0BikqKoGNpeX
+        - ROW-Itl1EOeAMYo-LxkrmHbHg
+      type: MARKDOWN
+    MARKDOWN-Vy4L3fLzOCjnIA2eVQR33:
+      children: []
+      id: MARKDOWN-Vy4L3fLzOCjnIA2eVQR33
+      meta:
+        code: '## 🎤 Топ-10 треков'
+        height: 11
+        width: 6
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-3QiPoYhzF5uXoeZbtoMZG
+        - ROW-ttT2vMA-qLasHoITNxnZ0
+      type: MARKDOWN
+    MARKDOWN-azrZp9yGC9pzcn0MkP6HK:
+      children: []
+      id: MARKDOWN-azrZp9yGC9pzcn0MkP6HK
+      meta:
+        code: '## 👑 Топ-10 клиентов '
+        height: 11
+        width: 6
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-uG93ULzdEWY5QTv0paCuK
+        - ROW-Hoy1VnFmqZu0xAFiRr4Va
+      type: MARKDOWN
+    MARKDOWN-i0VsDjqe7__sWd6ppq7iA:
+      children: []
+      id: MARKDOWN-i0VsDjqe7__sWd6ppq7iA
+      meta:
+        code: '## 🎧 Выручка по жанрам'
+        height: 12
+        width: 6
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-CFWHiayqfNgSIcPhWHR0t
+        - ROW-RzIw7EqT6fsGX0kTne_Ha
+      type: MARKDOWN
+    MARKDOWN-kv5W_ywoCJKdUiUQM6FtR:
+      children: []
+      id: MARKDOWN-kv5W_ywoCJKdUiUQM6FtR
+      meta:
+        code: '## 👔 Эффективность '
+        height: 12
+        width: 6
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-nQlrlY9Tj0BikqKoGNpeX
+        - ROW-Itl1EOeAMYo-LxkrmHbHg
+      type: MARKDOWN
+    MARKDOWN-pEg0_j9lQECIFlIJl7k1f:
+      children: []
+      id: MARKDOWN-pEg0_j9lQECIFlIJl7k1f
+      meta:
+        code: '## 📊 Выручка по странам '
+        height: 11
+        width: 6
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-Ap54--e7AEoxll3XZkdDe
+        - ROW-qSElqcNMvdgL2nUlSWNE_
+      type: MARKDOWN
+    MARKDOWN-wMoMUCfFuPjXAZoIkKdVw:
+      children: []
+      id: MARKDOWN-wMoMUCfFuPjXAZoIkKdVw
+      meta:
+        code: '## 📼 Выручка по типам носителей'
+        height: 12
+        width: 6
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-3QiPoYhzF5uXoeZbtoMZG
+        - ROW-ttT2vMA-qLasHoITNxnZ0
+      type: MARKDOWN
+    MARKDOWN-y0V4J6tqgrfwvk0juKO-T:
+      children: []
+      id: MARKDOWN-y0V4J6tqgrfwvk0juKO-T
+      meta:
+        code: '## 🎵 Топ-10 артистов
+
+          '
+        height: 12
+        width: 6
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-uG93ULzdEWY5QTv0paCuK
+        - ROW-Hoy1VnFmqZu0xAFiRr4Va
+      type: MARKDOWN
+    ROOT_ID:
+      children:
+        - GRID_ID
+      id: ROOT_ID
+      type: ROOT
+    ROW-Hoy1VnFmqZu0xAFiRr4Va:
+      children:
+        - MARKDOWN-azrZp9yGC9pzcn0MkP6HK
+        - MARKDOWN-y0V4J6tqgrfwvk0juKO-T
+      id: ROW-Hoy1VnFmqZu0xAFiRr4Va
+      meta:
+        background: BACKGROUND_TRANSPARENT
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-uG93ULzdEWY5QTv0paCuK
+      type: ROW
+    ROW-Itl1EOeAMYo-LxkrmHbHg:
+      children:
+        - MARKDOWN-kv5W_ywoCJKdUiUQM6FtR
+        - MARKDOWN-VwmZiaMK0U6VadrWvQzY5
+      id: ROW-Itl1EOeAMYo-LxkrmHbHg
+      meta:
+        background: BACKGROUND_TRANSPARENT
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-nQlrlY9Tj0BikqKoGNpeX
+      type: ROW
+    ROW-OKxrwjNhdBFyv-jejBsHS:
+      children:
+        - CHART-bPdxmE156Ny6U3NxDbMTb
+        - CHART-ffV55SWK-M37ESVCkPZCI
+        - CHART-0RFT_onBkyaPUcK1i6xzI
+      id: ROW-OKxrwjNhdBFyv-jejBsHS
+      meta:
+        background: BACKGROUND_TRANSPARENT
+      parents:
+        - ROOT_ID
+        - GRID_ID
+      type: ROW
+    ROW-RzIw7EqT6fsGX0kTne_Ha:
+      children:
+        - MARKDOWN-RQyY8ad3rrQQDY027HtX0
+        - MARKDOWN-i0VsDjqe7__sWd6ppq7iA
+      id: ROW-RzIw7EqT6fsGX0kTne_Ha
+      meta:
+        background: BACKGROUND_TRANSPARENT
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-CFWHiayqfNgSIcPhWHR0t
+      type: ROW
+    ROW-Xaiob3MpkQz3Sug4HR-v5:
+      children:
+        - MARKDOWN-DRX1zFFq-0C8svKsUUx4g
+        - MARKDOWN-0xJnNalTsy5QRuP04HrKo
+        - MARKDOWN-UHiMxZWiyRLb8PSBgtw58
+      id: ROW-Xaiob3MpkQz3Sug4HR-v5
+      meta:
+        background: BACKGROUND_TRANSPARENT
+      parents:
+        - ROOT_ID
+        - GRID_ID
+      type: ROW
+    ROW-qSElqcNMvdgL2nUlSWNE_:
+      children:
+        - MARKDOWN-pEg0_j9lQECIFlIJl7k1f
+        - MARKDOWN--J57zo2yBsBzlZ6E8LcSq
+      id: ROW-qSElqcNMvdgL2nUlSWNE_
+      meta:
+        background: BACKGROUND_WHITE
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-Ap54--e7AEoxll3XZkdDe
+      type: ROW
+    ROW-sY1PdIz_Vm-vyeutlq83U:
+      children:
+        - CHART-sVbWAILacOyvQt01xocBz
+        - CHART-sWaJr6zQ_hDHv2AAIm9dS
+      id: ROW-sY1PdIz_Vm-vyeutlq83U
+      meta:
+        background: BACKGROUND_TRANSPARENT
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-nQlrlY9Tj0BikqKoGNpeX
+      type: ROW
+    ROW-ttT2vMA-qLasHoITNxnZ0:
+      children:
+        - MARKDOWN-Vy4L3fLzOCjnIA2eVQR33
+        - MARKDOWN-wMoMUCfFuPjXAZoIkKdVw
+      id: ROW-ttT2vMA-qLasHoITNxnZ0
+      meta:
+        background: BACKGROUND_TRANSPARENT
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-3QiPoYhzF5uXoeZbtoMZG
+      type: ROW
+    ROW-v-pLU_3ql0xSkSP8pWI2L:
+      children:
+        - CHART-HCvUtW26NYurysAeXETIf
+        - CHART-1dBYQJilpSWXwoJxr2BNT
+      id: ROW-v-pLU_3ql0xSkSP8pWI2L
+      meta:
+        background: BACKGROUND_TRANSPARENT
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-uG93ULzdEWY5QTv0paCuK
+      type: ROW
+    ROW-v5vXHogjIvWg7IQ3CdZpS:
+      children:
+        - CHART-2QmQDDqm0W7ordcDf-NVK
+        - CHART-n5OXe74fkyBXBshDT1zuw
+      id: ROW-v5vXHogjIvWg7IQ3CdZpS
+      meta:
+        background: BACKGROUND_TRANSPARENT
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-CFWHiayqfNgSIcPhWHR0t
+      type: ROW
+    ROW-wZrdfPQl8YbIc0u-psYxB:
+      children:
+        - CHART-Tw6wMuhDMSY6D_lQxtaz7
+        - CHART-3BYbqnML3Xhin8awU9cMw
+      id: ROW-wZrdfPQl8YbIc0u-psYxB
+      meta:
+        background: BACKGROUND_TRANSPARENT
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-3QiPoYhzF5uXoeZbtoMZG
+      type: ROW
+    ROW-xWS8lHln9j1lA6LGSWkI3:
+      children:
+        - MARKDOWN-VimdsSvDpgA5hjL3KHxiR
+      id: ROW-xWS8lHln9j1lA6LGSWkI3
+      meta:
+        background: BACKGROUND_TRANSPARENT
+      parents:
+        - ROOT_ID
+        - GRID_ID
+      type: ROW
+    ROW-zRlIHPSiIu3ThAyn1mlVp:
+      children:
+        - CHART-ssMVDd3WtLlQD-jukX8Rl
+        - CHART-Fb2SlXAkX4pUaj0407aCp
+      id: ROW-zRlIHPSiIu3ThAyn1mlVp
+      meta:
+        background: BACKGROUND_TRANSPARENT
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+        - TAB-Ap54--e7AEoxll3XZkdDe
+      type: ROW
+    TAB-3QiPoYhzF5uXoeZbtoMZG:
+      children:
+        - ROW-ttT2vMA-qLasHoITNxnZ0
+        - ROW-wZrdfPQl8YbIc0u-psYxB
+      id: TAB-3QiPoYhzF5uXoeZbtoMZG
+      meta:
+        defaultText: Tab title
+        placeholder: Tab title
+        text: 📀 Контент и носители
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+      type: TAB
+    TAB-Ap54--e7AEoxll3XZkdDe:
+      children:
+        - ROW-qSElqcNMvdgL2nUlSWNE_
+        - ROW-zRlIHPSiIu3ThAyn1mlVp
+      id: TAB-Ap54--e7AEoxll3XZkdDe
+      meta:
+        defaultText: Tab title
+        placeholder: Tab title
+        text: 📊 География и рост
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+      type: TAB
+    TAB-CFWHiayqfNgSIcPhWHR0t:
+      children:
+        - ROW-RzIw7EqT6fsGX0kTne_Ha
+        - ROW-v5vXHogjIvWg7IQ3CdZpS
+      id: TAB-CFWHiayqfNgSIcPhWHR0t
+      meta:
+        defaultText: Tab title
+        placeholder: Tab title
+        text: 🌆 География и предпочтения
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+      type: TAB
+    TAB-nQlrlY9Tj0BikqKoGNpeX:
+      children:
+        - ROW-Itl1EOeAMYo-LxkrmHbHg
+        - ROW-sY1PdIz_Vm-vyeutlq83U
+      id: TAB-nQlrlY9Tj0BikqKoGNpeX
+      meta:
+        defaultText: Tab title
+        placeholder: Tab title
+        text: 👔 Команда и продукт
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+      type: TAB
+    TAB-uG93ULzdEWY5QTv0paCuK:
+      children:
+        - ROW-Hoy1VnFmqZu0xAFiRr4Va
+        - ROW-v-pLU_3ql0xSkSP8pWI2L
+      id: TAB-uG93ULzdEWY5QTv0paCuK
+      meta:
+        defaultText: Tab title
+        placeholder: Tab title
+        text: 🏆 Лучшие клиенты и артисты
+      parents:
+        - ROOT_ID
+        - GRID_ID
+        - TABS-x6GzJgiIx6D0jpqd4Z6pe
+      type: TAB
+    TABS-x6GzJgiIx6D0jpqd4Z6pe:
+      children:
+        - TAB-Ap54--e7AEoxll3XZkdDe
+        - TAB-uG93ULzdEWY5QTv0paCuK
+        - TAB-CFWHiayqfNgSIcPhWHR0t
+        - TAB-3QiPoYhzF5uXoeZbtoMZG
+        - TAB-nQlrlY9Tj0BikqKoGNpeX
+      id: TABS-x6GzJgiIx6D0jpqd4Z6pe
+      meta: {}
+      parents:
+        - ROOT_ID
+        - GRID_ID
+      type: TABS
